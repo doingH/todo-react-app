@@ -17,32 +17,26 @@ export function call(api, method, request) {
     url: API_BASE_URL + api,
     method: method,
   };
-  
   console.log("options.url = " + options.url);
-
   if (request) {
     // GET method
     options.body = JSON.stringify(request);
-  }
+  }  
 
   return fetch(options.url, options)
-    .then((response) => {
-        console.log("123 " + response);
-      if (!response.ok) {
-        // response.ok가 true이면 정상적인 리스폰스를 받은것, 아니면 에러 리스폰스를 받은것.
-        return Promise.reject(response);
-      }
-      return response;
-    })
-    
-    .catch((error) => {
-        
-        console.log(error);
-        if(error.status === 403) {
-            window.location.href = "/login";    //redirect
+    .then(response => {
+        if (!response.ok) {
+          // response.ok가 true이면 정상적인 리스폰스를 받은것, 아니면 에러 리스폰스를 받은것.
+          return Promise.reject(response);
         }
-
-        return Promise.reject(error);
+        return response.json();
+      })
+    .catch((error) => {
+      // 추가된 부분
+      if (error.status === 403) {
+         window.location.href = "/login"; // redirect
+      }
+      return Promise.reject(error);
     });
     
   }
