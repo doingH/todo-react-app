@@ -74,7 +74,7 @@ class App extends React.Component {
       <AppBar position="static">
         <Toolbar>
           <Grid justifyContent="space-between" container>
-            <Grid item>data
+            <Grid item>
               <Typography variant="h6">오늘의 할일</Typography>
             </Grid>
             <Grid>
