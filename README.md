@@ -1,4 +1,4 @@
-# Front-End
+# FRONT-END
 
 ## Node.js
 
@@ -69,7 +69,7 @@ vscode → 파일 → 작업영역에 폴더 추가
     - APP.js는 기본적으로 생성되는 리액트 컴포넌트다.
     
 
-![Untitled](Front-End%20858de527f24944f8be9c3b3aa2cd49dd/Untitled.png)
+![Untitled](FRONT-END%20858de/Untitled.png)
 
 ## material-ui  패키지 설치
 
@@ -117,9 +117,9 @@ ReactDOM.render(
 
 ReactDOM이 App 컴포넌트를 렌더링한 결과
 
-![Untitled](Front-End%20858de527f24944f8be9c3b3aa2cd49dd/Untitled%201.png)
+![Untitled](FRONT-END%20858de/Untitled%201.png)
 
-# TODO List 개발
+# TODO 서비스 개발
 
 ```jsx
 
@@ -206,3 +206,127 @@ class App extends React.Component {
 
 - App.js도 생성자에서 props를 인자로 받고 this.state에서 item을 초기화
 - `<Todo item={this.state.item}/>` 를 이용해 Todo.js의 props로 매개변수를 넘겨준다.
+
+# 서비스 통합
+
+- 렌더링
+    - 컴포넌트의 상태가 변하면 ReactDOM이 감지하여 변경된 부분의 HTML을 다시 바꾼다.
+    - React가 각 컴포넌트의 render() 함수를 콜해 DOM트리를 구성하는 과정을 mouting이라 한다.
+- mounting
+    - 컴포넌트의 생성자와 render() 함수를 부르고
+    - mounting을 종료하고 componentDidMount 함수를 호출한다.
+- componentDidMount
+    - 마운팅이 완료되야 컴포넌트의 프로퍼티가 사용 가능
+    - 프로퍼티가 준비되지 않은 상태면 예기치 못한 에러가 발생
+    - Back-End API를 호출 하는 것은 mounting이 완료된 후 실행되는 componentDidMount함수에 구현 것이 적절하다
+
+## CORS : Cross-Origin Resource Sharing
+
+- 처음 리소스를 제공한 도메인(Origin)이 현재 요청하려는 도메인과 다르더라도 요청을 허락해주는 웹 보안 방침
+- 현재 TODO의 Origin은 localhost:3000인데 새로운 8080으로 요청을 보내 CORS 발생
+- CORS가 허용되려면 백엔드에서 CORS 정책을 설정해야한다.
+(Spring WebMvcConfigurer구현을 통해)
+    
+    ```java
+    @Configuration
+    public class WebMvcConfig implements WebMvcConfigurer {
+    
+    	private final long MAX_AGE_SECS = 3600;
+    	
+    	@Override
+    	public void addCorsMappings(CorsRegistry corsRegistry) {
+    		
+    		// 모든 경로에 대해
+    		corsRegistry.addMapping("/**")
+    					// Origin이 http:localhost:3000에 대해 허용
+    					.allowedOrigins("http://localhost:3000")
+    					// GET, POST, PUT, PATCH, DELETE, OPTIONS 메서드를 허용한다.
+    					.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+    					.allowedHeaders("*")
+    					.allowCredentials(true)
+    					.maxAge(MAX_AGE_SECS);
+    		
+    	}
+    }
+    ```
+    
+
+## Promise 패턴
+
+- 반복적인 콜백 지옥 회피
+- Promise 오브젝트에 명시된 사항을 실행
+
+---
+
+## 인증 통합 및 ROUTER
+
+### react-router-dom
+
+- REACT는 CSR(Client-Side Routing)이다.
+- localhost:3000에 접속하면 FRONT-END서버가 REACT APP을 반환한다.
+- [localhost:3000/login](http://localhost:3000/login)을 입력하면 리액트 라우터가 가로채 URL을 파싱후 login 템플릿을 렌더링한다.
+- 모든 것이 클라이언트인 브라우저 내부에서 실행된다
+
+```bash
+# react-router-dom 라이브러리 설치
+$ npm install react-router-dom
+```
+
+AppRouter.js
+
+```jsx
+class AppRouter extends React.Component {
+  render() {
+    return (
+      <div>
+        <Router>
+          <div>
+            <Routes> 
+              <Route path="/login" element={<Login />}>
+              </Route>
+              <Route path="/" element={<App />}>
+              </Route>
+            </Routes>
+          </div>
+          <Box mt={5}>
+            <Copyright />
+          </Box>
+        </Router>
+      </div>
+    );
+  }
+}
+```
+
+- react-router-dom v6 부터 Switch → Routes로 변경 되었으며 element로 컴포넌트를 추가한다.
+- Login, App 컴포넌트를 추가하여 path와 element를 지정한다.
+- index.js에 App 대신 AppRouter로 사용하여 path별로 element를 다르게 적용하기 위해 설정
+    
+    ```jsx
+    ReactDOM.render(
+      <React.StrictMode>
+        <AppRouter />
+      </React.StrictMode>,
+      document.getElementById('root')
+    );
+    ```
+    
+- 사용자 인증이 완료 되지 않으면 /login으로 redirect하기 위해 fetch메소드의 catch문에 다음과 같이 작성
+    
+    ```jsx
+    if (error.status === 403) {
+      window.location.href = "/login"; // redirect
+    }
+    return Promise.reject(error);
+    ```
+    
+
+---
+
+## 로그인 JWT 저장과 사용
+
+- `localStorage.setItem("ACCESS_TOKEN", response.token);` 을 이용해 로그인 후 토큰을 저장
+- fetch 함수의 옵션에 `headers.append("Authorization", "Bearer " + accessToken);` 을 추가하여
+로그인 후 리소스 접근 시 JWT 인증에 사용 즉, 로그인 상태를 유지
+- 회원 가입 페이지 생성 및 네비게이션 바
+    - signUp.js, </AppBar> 추가
